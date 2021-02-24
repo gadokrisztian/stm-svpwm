@@ -22,7 +22,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
+#include <math.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +46,8 @@
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim4;
 
+UART_HandleTypeDef huart3;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -53,6 +57,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -67,6 +72,16 @@ static void MX_TIM1_Init(void);
  * Prescaler = 1
  *
  */
+
+bool updateFlag = false;
+
+typedef struct {
+	char msg[250];
+	unsigned int size;
+} Message;
+
+Message msg;
+
 
 /* USER CODE END 0 */
 
@@ -101,8 +116,29 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM4_Init();
   MX_TIM1_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim4);
+
+  double f_out  = 50.0;
+  double f_pwm  = 10.0e3;
+  double V_dc   = 50.0;
+  double V_m    = 20.0;
+
+  double omega = 2.0 * M_PI * f_out;
+
+  double Ml2n[3][3] = {
+		  {V_dc / 3 * 2, -V_dc / 3, -V_dc / 3},
+		  {-V_dc / 3 , 2 * V_dc / 3 , -V_dc / 3},
+		  {-V_dc / 3 , -V_dc / 3, 2 * V_dc / 3}
+  };
+
+  double MClark[2][3] = {
+		  {2.0 / 3.0, -0.5 * 2.0 / 3.0, -0.5 * 2.0 / 3.0},
+		  {0 * 2.0 / 3.0, M_SQRT3 / 2.0 * 2.0 / 3.0, -M_SQRT3 / 2.0 * 2.0 / 3.0}
+  };
+
+
 
 
 
@@ -114,6 +150,24 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+		if(updateFlag)
+		{
+			double t = HAL_GetTick() / 1000.0;
+			double VU = V_m * sin(omega * t + 0.0 * M_2_PI / 3.0);
+			double VV = V_m * sin(omega * t + 1.0 * M_2_PI / 3.0);
+			double VW = V_m * sin(omega * t + 2.0 * M_2_PI / 3.0);
+
+			msg.size =  sprintf(msg.msg, "t: %f\r\n", t);
+			HAL_UART_Transmit(&huart3, (uint8_t*) msg.msg, msg.size, 0xff);
+
+
+			double V_ref[2] = {
+					0.0, 0.0
+			};
+
+			updateFlag = false;
+			HAL_GPIO_TogglePin(LD_GREEN_GPIO_Port, LD_GREEN_Pin);
+		}
 	}
   /* USER CODE END 3 */
 }
@@ -126,6 +180,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
   */
@@ -162,6 +217,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART3;
+  PeriphClkInitStruct.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
@@ -274,9 +335,9 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 0;
+  htim4.Init.Prescaler = 10000-1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 20000-1;
+  htim4.Init.Period = 2000-1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -301,6 +362,41 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -314,6 +410,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LD_GREEN_Pin|LD_RED_Pin|LD_BLUE_Pin, GPIO_PIN_SET);
@@ -332,6 +429,7 @@ static void MX_GPIO_Init(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim == &htim4) {
 		HAL_GPIO_TogglePin(LD_GREEN_GPIO_Port, LD_GREEN_Pin);
+		updateFlag = true;
 	}
 }
 
