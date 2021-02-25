@@ -82,7 +82,6 @@ typedef struct {
 
 Message msg;
 
-
 /* USER CODE END 0 */
 
 /**
@@ -93,7 +92,6 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	//
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -118,29 +116,34 @@ int main(void)
   MX_TIM1_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim4);
+	HAL_TIM_Base_Start_IT(&htim4);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
 
-  double f_out  = 50.0;
-  double f_pwm  = 10.0e3;
-  double V_dc   = 50.0;
-  double V_m    = 20.0;
+	double dc = 0.69; // ez így jó, működik
+	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 25000* (1- dc));
 
-  double omega = 2.0 * M_PI * f_out;
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
 
-  double Ml2n[3][3] = {
-		  {V_dc / 3 * 2, -V_dc / 3, -V_dc / 3},
-		  {-V_dc / 3 , 2 * V_dc / 3 , -V_dc / 3},
-		  {-V_dc / 3 , -V_dc / 3, 2 * V_dc / 3}
-  };
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
-  double MClark[2][3] = {
-		  {2.0 / 3.0, -0.5 * 2.0 / 3.0, -0.5 * 2.0 / 3.0},
-		  {0 * 2.0 / 3.0, M_SQRT3 / 2.0 * 2.0 / 3.0, -M_SQRT3 / 2.0 * 2.0 / 3.0}
-  };
+	double f_out = 5.0;
+	double f_pwm = 10.0e3;
+	double f_sampling = 500;
+	double V_dc = 50.0;
+	double V_m = 20.0;
 
+	double omega = 2.0 * M_PI * f_out;
+	double T_sampling = 1.0 / f_sampling;
 
+	double Ml2n[3][3] = { { V_dc / 3 * 2, -V_dc / 3, -V_dc / 3 }, { -V_dc / 3, 2
+			* V_dc / 3, -V_dc / 3 }, { -V_dc / 3, -V_dc / 3, 2 * V_dc / 3 } };
 
-
+	double MClark[2][3] = { { 2.0 / 3.0, -0.5 * 2.0 / 3.0, -0.5 * 2.0 / 3.0 },
+			{ 0 * 2.0 / 3.0, M_SQRT3 / 2.0 * 2.0 / 3.0, -M_SQRT3 / 2.0 * 2.0
+					/ 3.0 } };
 
   /* USER CODE END 2 */
 
@@ -150,20 +153,72 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		if(updateFlag)
-		{
+		if (updateFlag) {
 			double t = HAL_GetTick() / 1000.0;
-			double VU = V_m * sin(omega * t + 0.0 * M_2_PI / 3.0);
-			double VV = V_m * sin(omega * t + 1.0 * M_2_PI / 3.0);
-			double VW = V_m * sin(omega * t + 2.0 * M_2_PI / 3.0);
+			double V[3] = { V_m * sin(omega * t + 0.0 * M_2_PI / 3.0), V_m
+					* sin(omega * t + 1.0 * M_2_PI / 3.0), V_m
+					* sin(omega * t + 2.0 * M_2_PI / 3.0) };
 
-			msg.size =  sprintf(msg.msg, "t: %f\r\n", t);
+			double V_ref[2] = { MClark[0][0] * V[0] + MClark[0][1] * V[1]
+					+ MClark[0][2] * V[2], MClark[1][0] * V[0]
+					+ MClark[1][1] * V[1] + MClark[1][2] * V[2] };
+
+			double theta = atan2(V_ref[1], V_ref[0]) * 180.0 / M_PI;
+
+			unsigned int swl[3], swr[3];
+
+			if (theta >= 0.0 && theta <= 60.0) {
+				unsigned int swl[3] = { 1, 1, 0 };
+				unsigned int swr[3] = { 1, 0, 0 };
+			} else if (theta >= 60.0 && theta <= 120.0) {
+				unsigned int swl[3] = { 0, 1, 0 };
+				unsigned int swr[3] = { 1, 1, 0 };
+
+			} else if (theta >= 120.0 && theta <= 180.0) {
+				unsigned int swl[3] = { 0, 1, 1 };
+				unsigned int swr[3] = { 0, 1, 0 };
+
+			} else if (theta <= -120.0 && theta >= -180.0) {
+				unsigned int swl[3] = { 0, 0, 1 };
+				unsigned int swr[3] = { 0, 1, 1 };
+
+			} else if (theta <= -60.0 && theta >= -120.0) {
+				unsigned int swl[3] = { 1, 0, 1 };
+				unsigned int swr[3] = { 0, 0, 1 };
+			} else if (theta <= 0.0 && theta >= -60.0) {
+				unsigned int swl[3] = { 1, 0, 0 };
+				unsigned int swr[3] = { 1, 0, 1 };
+			}
+
+			double Vr[2] = { V_dc / 3.0 * (2 * swr[0] - swr[1] - swr[2]),
+			M_SQRT3 * V_dc / 3.0 * (swr[1] - swr[2]) };
+
+			double Vl[2] = { V_dc / 3.0 * (2 * swl[0] - swl[1] - swl[2]),
+			M_SQRT3 * V_dc / 3.0 * (swl[1] - swl[2]) };
+
+			double A[2][2] = { { Vl[0], Vr[0] }, { Vl[1], Vr[1] } };
+			double detA = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+
+			double invA[2][2] = {
+					{ 1.0 / detA * A[1][1], -1.0 / detA * A[0][1] }, { -1.0
+							/ detA * A[1][0], 1.0 / detA * A[0][0] } };
+
+			double b[2] = { T_sampling * V_ref[0], T_sampling * V_ref[1] };
+
+			double T[2] = { invA[0][0] * b[0] + invA[0][1] * b[1], invA[1][0]
+					* b[0] + invA[1][1] * b[1] };
+
+			double Toff = T_sampling - T[0] - T[1];
+
+			double TD[3] = { (swl[0] * T[0] + swr[0] * T[1] + Toff / 2.0),
+					(swl[1] * T[0] + swr[1] * T[1] + Toff / 2.0), (swl[2] * T[0]
+							+ swr[2] * T[1] + Toff / 2.0) };
+
+
+
+
+			msg.size = sprintf(msg.msg, "t: %f\r\n", 10000 * (1- TD[0]/T_sampling));
 			HAL_UART_Transmit(&huart3, (uint8_t*) msg.msg, msg.size, 0xff);
-
-
-			double V_ref[2] = {
-					0.0, 0.0
-			};
 
 			updateFlag = false;
 			HAL_GPIO_TogglePin(LD_GREEN_GPIO_Port, LD_GREEN_Pin);
@@ -250,11 +305,11 @@ static void MX_TIM1_Init(void)
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 20000-1;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
+  htim1.Init.Period = 25000-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
@@ -265,6 +320,10 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_OC_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -290,7 +349,8 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  sConfigOC.OCMode = TIM_OCMODE_TIMING;
+  if (HAL_TIM_OC_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
@@ -337,7 +397,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 10000-1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 2000-1;
+  htim4.Init.Period = 20-1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -407,7 +467,6 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();

@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cmath as cm
 from numpy import pi
+from IPython import embed
+
 
 def ftri(x, p, a):
     return 4 * a / p * np.abs((x -p / 4) % p  - p/ 2) -a
@@ -117,6 +119,7 @@ for i, ti in enumerate(systick):
         T = np.linalg.solve(A, Ts * Vref)
         Toff = Ts - T.sum()
         cmpr = (np.dot(np.array([swl, swr]).T, T) +  Toff / 2).ravel()
+        embed()
     
 
     vtri = Ts*(0.5 + 0.5 * ftri(ti+Ts/4, Ts, 1))
