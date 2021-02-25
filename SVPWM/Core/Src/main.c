@@ -120,8 +120,8 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
 
-	double dc = 0.69; // ez így jó, működik
-	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 25000* (1- dc));
+	//double dc = 0.69; // ez így jó, működik
+	//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 25000* (1- dc));
 
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
     HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
@@ -138,12 +138,6 @@ int main(void)
 	double omega = 2.0 * M_PI * f_out;
 	double T_sampling = 1.0 / f_sampling;
 
-	double Ml2n[3][3] = { { V_dc / 3 * 2, -V_dc / 3, -V_dc / 3 }, { -V_dc / 3, 2
-			* V_dc / 3, -V_dc / 3 }, { -V_dc / 3, -V_dc / 3, 2 * V_dc / 3 } };
-
-	double MClark[2][3] = { { 2.0 / 3.0, -0.5 * 2.0 / 3.0, -0.5 * 2.0 / 3.0 },
-			{ 0 * 2.0 / 3.0, M_SQRT3 / 2.0 * 2.0 / 3.0, -M_SQRT3 / 2.0 * 2.0
-					/ 3.0 } };
 
   /* USER CODE END 2 */
 
@@ -155,64 +149,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		if (updateFlag) {
 			double t = HAL_GetTick() / 1000.0;
-			double V[3] = { V_m * sin(omega * t + 0.0 * M_2_PI / 3.0), V_m
-					* sin(omega * t + 1.0 * M_2_PI / 3.0), V_m
-					* sin(omega * t + 2.0 * M_2_PI / 3.0) };
 
-			double V_ref[2] = { MClark[0][0] * V[0] + MClark[0][1] * V[1]
-					+ MClark[0][2] * V[2], MClark[1][0] * V[0]
-					+ MClark[1][1] * V[1] + MClark[1][2] * V[2] };
-
-			double theta = atan2(V_ref[1], V_ref[0]) * 180.0 / M_PI;
-
-			unsigned int swl[3], swr[3];
-
-			if (theta >= 0.0 && theta <= 60.0) {
-				unsigned int swl[3] = { 1, 1, 0 };
-				unsigned int swr[3] = { 1, 0, 0 };
-			} else if (theta >= 60.0 && theta <= 120.0) {
-				unsigned int swl[3] = { 0, 1, 0 };
-				unsigned int swr[3] = { 1, 1, 0 };
-
-			} else if (theta >= 120.0 && theta <= 180.0) {
-				unsigned int swl[3] = { 0, 1, 1 };
-				unsigned int swr[3] = { 0, 1, 0 };
-
-			} else if (theta <= -120.0 && theta >= -180.0) {
-				unsigned int swl[3] = { 0, 0, 1 };
-				unsigned int swr[3] = { 0, 1, 1 };
-
-			} else if (theta <= -60.0 && theta >= -120.0) {
-				unsigned int swl[3] = { 1, 0, 1 };
-				unsigned int swr[3] = { 0, 0, 1 };
-			} else if (theta <= 0.0 && theta >= -60.0) {
-				unsigned int swl[3] = { 1, 0, 0 };
-				unsigned int swr[3] = { 1, 0, 1 };
-			}
-
-			double Vr[2] = { V_dc / 3.0 * (2 * swr[0] - swr[1] - swr[2]),
-			M_SQRT3 * V_dc / 3.0 * (swr[1] - swr[2]) };
-
-			double Vl[2] = { V_dc / 3.0 * (2 * swl[0] - swl[1] - swl[2]),
-			M_SQRT3 * V_dc / 3.0 * (swl[1] - swl[2]) };
-
-			double A[2][2] = { { Vl[0], Vr[0] }, { Vl[1], Vr[1] } };
-			double detA = A[0][0] * A[1][1] - A[0][1] * A[1][0];
-
-			double invA[2][2] = {
-					{ 1.0 / detA * A[1][1], -1.0 / detA * A[0][1] }, { -1.0
-							/ detA * A[1][0], 1.0 / detA * A[0][0] } };
-
-			double b[2] = { T_sampling * V_ref[0], T_sampling * V_ref[1] };
-
-			double T[2] = { invA[0][0] * b[0] + invA[0][1] * b[1], invA[1][0]
-					* b[0] + invA[1][1] * b[1] };
-
-			double Toff = T_sampling - T[0] - T[1];
-
-			double TD[3] = { (swl[0] * T[0] + swr[0] * T[1] + Toff / 2.0),
-					(swl[1] * T[0] + swr[1] * T[1] + Toff / 2.0), (swl[2] * T[0]
-							+ swr[2] * T[1] + Toff / 2.0) };
 
 
 
