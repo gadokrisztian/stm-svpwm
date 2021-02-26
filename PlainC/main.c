@@ -16,17 +16,22 @@ double randbetween(double lower, double upper) {
     return lower + sc * (upper - lower);
 }
 
+double ftri(double x, double p, double a)
+{
+    return 4 * a / p * fabs(fmod(x -p / 4, p)  - p/ 2) -a;
+}
+
 int main() {
     FILE *fp = fopen("export.csv", "w");
     srand(time(NULL));
 
     double Vdc = 50.0;
-    double Vm = 30.0;
+    double Vm = 20.0;
 
     double f_pwm = 10.0e3;
     double f_out = 50.0;
-    double f_update = 1e3;
-    double f_simulation = 50e3;
+    double f_update = 1000;
+    double f_simulation = 500e3;
     assert(f_simulation >= 2.0 * f_pwm);
 
 
@@ -34,20 +39,23 @@ int main() {
     double T_out = 1.0 / f_out;
     double T_update = 1.0 / f_update;
     double T_simulation = 1.0 / f_simulation;
+    double dt = T_simulation;
 
     printf("T_pwm: %f s\n", T_pwm);
     printf("T_out: %f s\n", T_out);
     printf("T_update: %f s\n", T_update);
     printf("T_simulation: %f s\n", T_simulation);
+    printf("dt: %f s\n", dt);
 
     double t0 = 0.0, t1 = 0.0;
     double dc[3] = {0.0};
 
     do {
-        t1 += randbetween(T_simulation / 2.0, T_simulation);
+        //t1 += randbetween(T_simulation / 2.0, T_simulation);
+        t1 += dt;
         double elapsed = t1 - t0;
 
-        if (elapsed >= T_update || t0< 1.0e-10) {
+        if (elapsed >= T_pwm || t0< 1.0e-10) {
             t0 = t1;
 
             double V[3] = {
@@ -101,7 +109,7 @@ int main() {
                 swr[0] = 0;
                 swr[1] = 0;
                 swr[2] = 1;
-            } else if (theta <= -0.0 && theta >= -60.0) {
+            } else if (theta <= 0.0 && theta >= -60.0) {
                 swl[0] = 1;
                 swl[1] = 0;
                 swl[2] = 0;
@@ -144,15 +152,20 @@ int main() {
             dc[0] = (swl[0]*T[0] + swr[0]*T[1] + Toff / 2) / T_pwm;
             dc[1] = (swl[1]*T[0] + swr[1]*T[1] + Toff / 2) / T_pwm;
             dc[2] = (swl[2]*T[0] + swr[2]*T[1] + Toff / 2) / T_pwm;
-
-
-
-
         }
+
+        double vtr = (0.5 + 0.5 * ftri(t1+T_pwm / 4, T_pwm, 1.0));
+        double pwm[3] = {0.0};
+        if (dc[0] >= vtr) { pwm[0] = 1.0;}
+        if (dc[1] >= vtr) { pwm[1] = 1.0;}
+        if (dc[2] >= vtr) { pwm[2] = 1.0;}
+
 
 
         //printf("t1: %.15f\n", t1);
-        fprintf(fp, "%.15f, %f,%f,%f\n", t1, dc[0], dc[1], dc[2]);
+        fprintf(fp, "%.15f, %f,%f,%f,", t1, dc[0], dc[1], dc[2]);
+        fprintf(fp, "%f,%f,%f, %f\n", pwm[0], pwm[1], pwm[2], vtr);
+
     } while (t1 <= 2 * T_out);
 
     fclose(fp);
