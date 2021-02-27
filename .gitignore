@@ -1,3 +1,11 @@
 SVPWM/Debug
 PlainC/cmake-build-debug/
 python/.ipynb_checkpoints/
+python/__pycache__/
+*.raw
+U.txt
+UN.txt
+V.txt
+VN.txt
+W.txt
+WN.txt
