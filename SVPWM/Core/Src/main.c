@@ -129,11 +129,11 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
-	double f_out = 2.0;
+	double f_out = 0.5;
 	double f_pwm = 10.0e3;
 	double f_sampling = 500;
 	double Vdc = 50.0;
-	double Vm = 20.0;
+	double Vm = 15.0;
 
 	double omega = 2.0 * M_PI * f_out;
 	double T_sampling = 1.0 / f_sampling;
@@ -159,6 +159,7 @@ int main(void)
 			double t = HAL_GetTick() / 1000.0;
 
 			double theta = fmod(omega * t, 2 * M_PI);
+			theta = M_PI / 5.5;
 		    double Vref[2] = { Vm * cos(theta), Vm * sin(theta) };
 
 		    double Vl[2] = {0.0};
@@ -403,7 +404,7 @@ static void MX_TIM1_Init(void)
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCFastMode = TIM_OCFAST_ENABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -421,7 +422,7 @@ static void MX_TIM1_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.DeadTime = 100;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.BreakFilter = 0;
