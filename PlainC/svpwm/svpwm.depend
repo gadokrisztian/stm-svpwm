@@ -1,0 +1,11 @@
+# depslib dependency file v1.0
+1618335110 source:e:\base\git\stm-svpwm\plainc\separated\svpwm\inverter.c
+	<math.h>
+	"inverter.h"
+
+1618385663 e:\base\git\stm-svpwm\plainc\separated\svpwm\inverter.h
+
+1618385560 source:e:\base\git\stm-svpwm\plainc\separated\svpwm\main.c
+	<stdio.h>
+	"inverter.h"
+

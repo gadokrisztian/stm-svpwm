@@ -1,4 +1,5 @@
 SVPWM/Debug
+SVPWM-FREERTOS/Debug
 PlainC/cmake-build-debug/
 python/.ipynb_checkpoints/
 python/__pycache__/
