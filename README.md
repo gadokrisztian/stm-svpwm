@@ -3,17 +3,31 @@
 block diagram: https://www.cnx-software.com/wp-content/uploads/2014/09/STM32F7_Block_Diagram.png
 docs: https://www.st.com/en/evaluation-tools/nucleo-f767zi.html#documentation
 
-https://hasanyavuz.ozderya.net/?p=437
 ## Pinouts
 
-| Connector | Pin | Signal | board pin |
-|-----------|-----|--------|------|
-| CN10      | 4   | U      |PE9|
-| CN10      | 18  | U_GND  |DE8|
-| CN10      | 6   | V      |
-| CN10      | 24  | V_GND  |
-| CN10      | 10  | W      |
-| CN10      | 26  | W_GND  |
-| CN9       | 1   | I_u    |
-| CN9       | 2   | I_v    |
-| CN9       | 3   | I_w    |
+|Name|Signal|
+|-|-|
+
+## Timers
+|Timer| funciton|
+|-|-|
+|TIM1| 10 kHz PWM output|
+|TIM2|precise ```f_out```|
+| TIM4| 1.5 kHz Sampling interrupt generation|
+|TIM14|Timebase source|
+
+
+## Resources
+https://hasanyavuz.ozderya.net/?p=437
+
+
+## Checklist
+
+- [ ] pwm output: 10kHz
+- [ ] deadtime: 500ns
+- [ ] update frequency: 1.5-2 kHz
+- [ ] ```Vm``` changes output avg voltage
+- [ ] ```f_out``` changes output freq. (not pwm freq.!)
+- [ ] ```f_out```: 0-100Hz
+
+## ToDo list

@@ -4,6 +4,7 @@
 #define SQRT3 1.73205080756887729352
 #define PI    (1146408/364913.0)
 #define VDC   50.0
+#define MAXV  (SQRT3 / 3.0 * VDC)
 
 typedef enum
 {
@@ -33,7 +34,13 @@ typedef struct
     double dc[3];
 } Inverter;
 
-
+typedef struct
+{
+	unsigned long long periodcounter;
+	double dc[3];
+	double Vm;
+	double tp;
+} Record;
 
 void inv_init(Inverter *inv);
 void inv_calc_dc(Inverter *inv);

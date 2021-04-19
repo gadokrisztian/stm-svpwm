@@ -13,7 +13,7 @@ const unsigned int swt[8][3] = { { 0, 0, 0 }, { 0, 0, 1 }, { 0, 1, 0 }, { 0, 1,
 void inv_init(Inverter *inv) {
 	inv->f_out = 0.0;
 	inv->f_pwm = 10e3;
-	inv->f_sampling = 2000;
+	inv->f_sampling = 1500;
 	inv->Vm = 0.0;
 	inv->theta = 0.0;
 	inv->dc[U] = 0.0;
