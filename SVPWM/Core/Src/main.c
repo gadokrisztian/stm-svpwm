@@ -133,10 +133,16 @@ int main(void) {
 
 		inv.theta += 0.05;
 		inv.theta = fmod(inv.theta, 2*PI);
+		inv.theta = 2*PI / 6.0;
 		inv_calc_dc(&inv);
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 10000 * (1 - inv.dc[U]));
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 10000 * (1 - inv.dc[V]));
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 10000 * (1 - inv.dc[W]));
+
+		inv.dc[U] = 0.5;
+		inv.dc[V] = 0.1;
+		inv.dc[W] = 0.8;
+
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (10000 - 1) * inv.dc[U]);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, (10000 - 1) * inv.dc[V]);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, (10000 - 1) * inv.dc[W]);
 		HAL_Delay(20);
 		HAL_GPIO_TogglePin(LD_BLUE_GPIO_Port, LD_BLUE_Pin);
 

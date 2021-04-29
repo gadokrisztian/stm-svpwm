@@ -31,3 +31,8 @@ https://hasanyavuz.ozderya.net/?p=437
 - [ ] ```f_out```: 0-100Hz
 
 ## ToDo list
+
+## Mérések
+**M001**: _pwm 10kHz ellenőrzése_
+**M002**: kitöltési tényező (U: 10%, V: 50%)
+**M003**: deadtime 500ns

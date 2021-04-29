@@ -54,8 +54,6 @@ void inverter_set_Vm(double vm);
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
-DMA_HandleTypeDef hdma_adc1;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
@@ -91,12 +89,10 @@ const osThreadAttr_t Main_attributes = {
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART3_Init(void);
 static void MX_TIM2_Init(void);
-static void MX_ADC1_Init(void);
 void default_task(void *argument);
 void calc_dutycycle(void *argument);
 void main_task(void *argument);
@@ -123,8 +119,8 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	inv_init(&inv);
-	inv.f_sampling = 2000;
-	inverter_set_fout(0);
+	inv.f_sampling = 1500;
+	inverter_set_fout(50);
 
   /* USER CODE END 1 */
 
@@ -146,12 +142,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_TIM4_Init();
   MX_TIM1_Init();
   MX_USART3_Init();
   MX_TIM2_Init();
-  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -188,7 +182,6 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
 	vTaskSuspend(DefaultHandle);
-	vTaskSuspend(DutyCycleHandle);
 
 	inverter_set_channel(U, ON);
 	inverter_set_channel(UN, ON);
@@ -278,56 +271,6 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief ADC1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_ADC1_Init(void)
-{
-
-  /* USER CODE BEGIN ADC1_Init 0 */
-
-  /* USER CODE END ADC1_Init 0 */
-
-  ADC_ChannelConfTypeDef sConfig = {0};
-
-  /* USER CODE BEGIN ADC1_Init 1 */
-
-  /* USER CODE END ADC1_Init 1 */
-  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
-  */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = ENABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
-  */
-  sConfig.Channel = ADC_CHANNEL_3;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ADC1_Init 2 */
-
-  /* USER CODE END ADC1_Init 2 */
-
-}
-
-/**
   * @brief TIM1 Initialization Function
   * @param None
   * @retval None
@@ -349,7 +292,7 @@ static void MX_TIM1_Init(void)
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
   htim1.Init.Period = 10000-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
@@ -396,7 +339,7 @@ static void MX_TIM1_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.DeadTime = 100;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.BreakFilter = 0;
@@ -481,7 +424,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 16-1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 3125-1;
+  htim4.Init.Period = 4167-1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -540,22 +483,6 @@ static void MX_USART3_Init(void)
 }
 
 /**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA2_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA2_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -565,8 +492,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
@@ -575,12 +502,34 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LDG_Pin|LDR_Pin|LDB_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin : PC13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PC0 PC3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LDG_Pin LDR_Pin LDB_Pin */
   GPIO_InitStruct.Pin = LDG_Pin|LDR_Pin|LDB_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
@@ -651,6 +600,17 @@ void inverter_set_Vm(double vm) {
 	inv.Vm = vm;
 }
 
+void EXTI15_10_IRQHandler(void) {
+	/* USER CODE BEGIN EXTI15_10_IRQn 0 */
+
+	/* USER CODE END EXTI15_10_IRQn 0 */
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+	/* USER CODE BEGIN EXTI15_10_IRQn 1 */
+	xTaskResumeFromISR(MainHandle);
+
+	/* USER CODE END EXTI15_10_IRQn 1 */
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_default_task */
@@ -690,15 +650,17 @@ void calc_dutycycle(void *argument)
   /* USER CODE BEGIN calc_dutycycle */
 	/* Infinite loop */
 	for (;;) {
+		RON;
 		inv.theta = (double) (htim2.Instance->CNT + 1)
 				/ (htim2.Instance->ARR + 1) * 2 * PI;
 		inv_calc_dc(&inv);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,
-				(10000 - 1) * (1 - inv.dc[U]));
+				(10000-1) * inv.dc[U]);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2,
-				(10000 - 1) * (1 - inv.dc[V]));
+				(10000-1) * inv.dc[V]);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3,
-				(10000 - 1) * (1 - inv.dc[W]));
+				(10000-1) * inv.dc[W]);
+		ROFF;
 		vTaskSuspend(DutyCycleHandle);
 
 	}
@@ -727,80 +689,114 @@ void main_task(void *argument)
 
 	/* Infinite loop */
 	for (;;) {
-		// RAMP UP
-		BON;
-		for (int i = 0; i < nb_steps; i++) {
-			inverter_set_fout((i + 1) * step_f);
-			inverter_set_Vm((i + 1) * step_V);
-			osDelay(ramptime);
-		}
-		BOFF;
+		/*
+		 // RAMP UP
+		 BON;
+		 GON;
+		 for (int i = 0; i < nb_steps; i++) {
+		 inverter_set_fout((i + 1) * step_f);
+		 inverter_set_Vm((i + 1) * step_V);
+		 osDelay(ramptime);
+		 }
+
+		 vTaskSuspend(MainHandle);
+
+		 GOFF;
+		 inverter_set_channel(U, OFF);
+		 osDelay(testcase_runtime);
+		 inverter_set_channel(U, ON);
+		 osDelay(testcase_recoverytime);
+
+		 GON;
+		 vTaskSuspend(MainHandle);
+		 GOFF;
+
+		 inverter_set_channel(UN, OFF);
+		 osDelay(testcase_runtime);
+		 inverter_set_channel(UN, ON);
+
+		 osDelay(testcase_recoverytime);
+		 GON;
+		 vTaskSuspend(MainHandle);
+		 GOFF;
+
+		 inverter_set_channel(V, OFF);
+		 osDelay(testcase_runtime);
+		 inverter_set_channel(V, ON);
+
+		 osDelay(testcase_recoverytime);
+		 GON;
+		 vTaskSuspend(MainHandle);
+		 GOFF;
+
+		 inverter_set_channel(VN, OFF);
+		 osDelay(testcase_runtime);
+		 inverter_set_channel(VN, ON);
+
+		 osDelay(testcase_recoverytime);
+		 GON;
+		 vTaskSuspend(MainHandle);
+		 GOFF;
+
+		 inverter_set_channel(W, OFF);
+		 osDelay(testcase_runtime);
+		 inverter_set_channel(W, ON);
+
+		 osDelay(testcase_recoverytime);
+		 GON;
+		 vTaskSuspend(MainHandle);
+		 GOFF;
+
+		 inverter_set_channel(WN, OFF);
+		 osDelay(testcase_runtime);
+		 inverter_set_channel(WN, ON);
+
+		 osDelay(testcase_recoverytime);
+		 GON;
+		 vTaskSuspend(MainHandle);
+		 GOFF;
+
+		 // RAMPDOWN
+		 for (int i = nb_steps; i > 0; i--) {
+		 inverter_set_fout((i - 1) * step_f);
+		 inverter_set_Vm((i - 1) * step_V);
+		 osDelay(ramptime);
+		 }
+
+		 // DONE TEST
+		 HAL_TIM_Base_Stop_IT(&htim4);
+		 HAL_TIM_Base_Stop(&htim4);
+		 inverter_set_channel(U, OFF);
+		 inverter_set_channel(UN, OFF);
+		 inverter_set_channel(V, OFF);
+		 inverter_set_channel(VN, OFF);
+		 inverter_set_channel(W, OFF);
+		 inverter_set_channel(WN, OFF);
+		 vTaskSuspend(DutyCycleHandle);
+		 vTaskResume(DefaultHandle);
+		 vTaskDelete(DutyCycleHandle);
+		 vTaskDelete(MainHandle);
+
+
+		 vTaskSuspend(MainHandle);
+		 */
+
 		GON;
-
-		inverter_set_channel(U, OFF);
-		osDelay(testcase_runtime);
-		inverter_set_channel(U, ON);
-
-		osDelay(testcase_recoverytime);
-
-		inverter_set_channel(UN, OFF);
-		osDelay(testcase_runtime);
-		inverter_set_channel(UN, ON);
-
-		osDelay(testcase_recoverytime);
-
-		inverter_set_channel(V, OFF);
-		osDelay(testcase_runtime);
-		inverter_set_channel(V, ON);
-
-		osDelay(testcase_recoverytime);
-
-		inverter_set_channel(VN, OFF);
-		osDelay(testcase_runtime);
-		inverter_set_channel(VN, ON);
-
-		osDelay(testcase_recoverytime);
-
-		inverter_set_channel(W, OFF);
-		osDelay(testcase_runtime);
-		inverter_set_channel(W, ON);
-
-		osDelay(testcase_recoverytime);
-
-		inverter_set_channel(WN, OFF);
-		osDelay(testcase_runtime);
-		inverter_set_channel(WN, ON);
-
-		osDelay(testcase_recoverytime);
-
+		osDelay(500);
 		GOFF;
+		osDelay(500);
 
-		// RAMPDOWN
-		for (int i = nb_steps; i > 0; i--) {
-			inverter_set_fout((i - 1) * step_f);
-			inverter_set_Vm((i - 1) * step_V);
-			osDelay(ramptime);
-		}
-
-		// DONE TEST
-		HAL_TIM_Base_Stop_IT(&htim4);
-		HAL_TIM_Base_Stop(&htim4);
-		inverter_set_channel(U, OFF);
-		inverter_set_channel(UN, OFF);
-		inverter_set_channel(V, OFF);
-		inverter_set_channel(VN, OFF);
-		inverter_set_channel(W, OFF);
-		inverter_set_channel(WN, OFF);
-		vTaskSuspend(DutyCycleHandle);
-		vTaskResume(DefaultHandle);
-		vTaskSuspend(MainHandle);
+		inverter_set_Vm(1.0);
+		osDelay(3000);
+		inverter_set_Vm(20);
+		osDelay(3000);
 	}
   /* USER CODE END main_task */
 }
 
  /**
   * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM14 interrupt took place, inside
+  * @note   This function is called  when TIM3 interrupt took place, inside
   * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
   * a global variable "uwTick" used as application time base.
   * @param  htim : TIM handle
@@ -811,13 +807,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM14) {
+  if (htim->Instance == TIM3) {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
 	if (htim->Instance == TIM4) {
 		xTaskResumeFromISR(DutyCycleHandle);
-		//HAL_GPIO_TogglePin(LDR_GPIO_Port, LDR_Pin);
 		portYIELD_FROM_ISR(pdTRUE);
 	}
 
