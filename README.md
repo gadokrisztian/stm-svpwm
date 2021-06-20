@@ -19,20 +19,3 @@ docs: https://www.st.com/en/evaluation-tools/nucleo-f767zi.html#documentation
 
 ## Resources
 https://hasanyavuz.ozderya.net/?p=437
-
-
-## Checklist
-
-- [ ] pwm output: 10kHz
-- [ ] deadtime: 500ns
-- [ ] update frequency: 1.5-2 kHz
-- [ ] ```Vm``` changes output avg voltage
-- [ ] ```f_out``` changes output freq. (not pwm freq.!)
-- [ ] ```f_out```: 0-100Hz
-
-## ToDo list
-
-## Mérések
-**M001**: _pwm 10kHz ellenőrzése_
-**M002**: kitöltési tényező (U: 10%, V: 50%)
-**M003**: deadtime 500ns

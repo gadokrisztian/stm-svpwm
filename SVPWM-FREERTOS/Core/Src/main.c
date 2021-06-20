@@ -689,10 +689,8 @@ void main_task(void *argument)
 
 	/* Infinite loop */
 	for (;;) {
-		/*
 		 // RAMP UP
-		 BON;
-		 GON;
+		 vTaskSuspend(MainHandle);
 		 for (int i = 0; i < nb_steps; i++) {
 		 inverter_set_fout((i + 1) * step_f);
 		 inverter_set_Vm((i + 1) * step_V);
@@ -701,60 +699,37 @@ void main_task(void *argument)
 
 		 vTaskSuspend(MainHandle);
 
-		 GOFF;
+
 		 inverter_set_channel(U, OFF);
-		 osDelay(testcase_runtime);
+		 vTaskSuspend(MainHandle);
+
 		 inverter_set_channel(U, ON);
-		 osDelay(testcase_recoverytime);
-
-		 GON;
-		 vTaskSuspend(MainHandle);
-		 GOFF;
-
 		 inverter_set_channel(UN, OFF);
-		 osDelay(testcase_runtime);
+                 vTaskSuspend(MainHandle);
+
 		 inverter_set_channel(UN, ON);
-
-		 osDelay(testcase_recoverytime);
-		 GON;
-		 vTaskSuspend(MainHandle);
-		 GOFF;
-
 		 inverter_set_channel(V, OFF);
-		 osDelay(testcase_runtime);
+                 vTaskSuspend(MainHandle);
+
 		 inverter_set_channel(V, ON);
-
-		 osDelay(testcase_recoverytime);
-		 GON;
-		 vTaskSuspend(MainHandle);
-		 GOFF;
-
 		 inverter_set_channel(VN, OFF);
-		 osDelay(testcase_runtime);
+                 vTaskSuspend(MainHandle);
+
 		 inverter_set_channel(VN, ON);
-
-		 osDelay(testcase_recoverytime);
-		 GON;
-		 vTaskSuspend(MainHandle);
-		 GOFF;
-
 		 inverter_set_channel(W, OFF);
-		 osDelay(testcase_runtime);
-		 inverter_set_channel(W, ON);
+                 vTaskSuspend(MainHandle);
 
-		 osDelay(testcase_recoverytime);
-		 GON;
-		 vTaskSuspend(MainHandle);
-		 GOFF;
 
+
+		 inverter_set_channel(W, ON);		 
 		 inverter_set_channel(WN, OFF);
-		 osDelay(testcase_runtime);
-		 inverter_set_channel(WN, ON);
+                 vTaskSuspend(MainHandle);
 
-		 osDelay(testcase_recoverytime);
-		 GON;
+
+
+		 inverter_set_channel(WN, ON);
 		 vTaskSuspend(MainHandle);
-		 GOFF;
+
 
 		 // RAMPDOWN
 		 for (int i = nb_steps; i > 0; i--) {
@@ -776,20 +751,9 @@ void main_task(void *argument)
 		 vTaskResume(DefaultHandle);
 		 vTaskDelete(DutyCycleHandle);
 		 vTaskDelete(MainHandle);
-
-
 		 vTaskSuspend(MainHandle);
-		 */
+                 vTaskResume(DefaultHandle);
 
-		GON;
-		osDelay(500);
-		GOFF;
-		osDelay(500);
-
-		inverter_set_Vm(1.0);
-		osDelay(3000);
-		inverter_set_Vm(20);
-		osDelay(3000);
 	}
   /* USER CODE END main_task */
 }
